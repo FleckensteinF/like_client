@@ -66,11 +66,16 @@ def want_like():
 		return False
 
 def main_loop():
-        while True:
+        count=0
+        while True:                
                 if (gpio.input(button_pin)):
                         print "Like"
-                        r=really_post_like()
-                        print "posted like with ", r.status_code
+                        try:
+                                r=really_post_like()
+                                print "posted like with ", r.status_code
+                        except Exception as e:
+                                print "Failed to post like ", e
+
                 else:
                         print "OFF"
                 if want_like():
@@ -79,14 +84,23 @@ def main_loop():
                         time.sleep(1.0)
                         print "Stopping liking"
                         gpio.output(set_button_pin, gpio.LOW)
-                r = get_likes()
-                print "got likes with ", r.status_code
-                print "text: ", r.text
-                like_times=parse_likes(r.text)
-                for lt in like_times:
-                        exec_like(lt)
-                time.sleep(5)
+                count=count+1
+                if count >= 10:
+                        count = 0
+                        try:
+                                r = get_likes()
+                                print "got likes with ", r.status_code
+                                print "text: ", r.text
+                                like_times=parse_likes(r.text)
+                                for lt in like_times:
+                                        exec_like(lt)
+                        except Exception as e:
+                                print "Failed to get likes ", e
+                time.sleep(0.5)
 
 if __name__ == "__main__":
         setup_gpio()
-        main_loop()
+        try:
+                main_loop()
+        except Exception as e:
+                print "Exception: ",e

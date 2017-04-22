@@ -14,6 +14,8 @@ liked_times=set()
 
 button_pin=17
 set_button_pin=27
+connection_pin=24
+script_running_pin=23
 
 def really_post_like():
         r=requests.post(base_url+"like",data={'button_id':my_button,'client':'like_button'})
@@ -45,8 +47,12 @@ def setup_gpio():
         gpio.setmode(gpio.BCM)
         gpio.setup(set_button_pin, gpio.OUT)
         gpio.setup(button_pin, gpio.IN, pull_up_down=gpio.PUD_DOWN)
-
+        gpio.setup(connection_pin, gpio.OUT)
+        gpio.setup(script_running_pin, gpio.OUT)
+        
         gpio.output(set_button_pin, gpio.LOW)
+        gpio.output(connection_pin, gpio.LOW)
+        gpio.output(script_running_pin, gpio.LOW)
 
 def exec_like(like_time):
         print "Liking"
@@ -67,12 +73,14 @@ def want_like():
 
 def main_loop():
         count=0
+        led_state=False
         while True:                
                 if (gpio.input(button_pin)):
                         print "Like"
                         try:
                                 r=really_post_like()
                                 print "posted like with ", r.status_code
+                                gpio.output(connection_pin, gpio.HIGH)
                         except Exception as e:
                                 print "Failed to post like ", e
 
@@ -94,9 +102,13 @@ def main_loop():
                                 like_times=parse_likes(r.text)
                                 for lt in like_times:
                                         exec_like(lt)
+                                gpio.output(connection_pin, gpio.HIGH)
                         except Exception as e:
                                 print "Failed to get likes ", e
+                led_state = not led_state
+                gpio.output(script_running_pin, gpio.HIGH if led_state else gpio.LOW)
                 time.sleep(0.5)
+                gpio.output(connection_pin, gpio.LOW)
 
 if __name__ == "__main__":
         setup_gpio()

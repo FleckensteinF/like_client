@@ -5,7 +5,7 @@ import time
 import os
 import sys
 
-button_pin=27
+button_pin=24
 gpio.setmode(gpio.BCM)
 gpio.setup(button_pin, gpio.OUT)
 

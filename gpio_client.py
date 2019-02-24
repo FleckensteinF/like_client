@@ -7,9 +7,10 @@ import sys
 import select
 import datetime
 import requests
+import traceback
 
 base_url="https://likeserver-164912.appspot.com/"
-my_button="wera"
+my_button="Christian"
 liked_times=set()
 
 button_pin=17
@@ -71,26 +72,31 @@ def want_like():
 	else:
 		return False
 
-def main_loop():
+def main_loop(f):
         count=0
         led_state=False
         while True:                
                 if (gpio.input(button_pin)):
                         print "Like"
+                        print >> f, "Like"
                         try:
                                 r=really_post_like()
                                 print "posted like with ", r.status_code
+                                print >> f, "posted like with ", r.status_code
                                 gpio.output(connection_pin, gpio.HIGH)
                         except Exception as e:
                                 print "Failed to post like ", e
-
+                                print >> f, "Failed to post like ", e
                 else:
                         print "OFF"
+                        print >> f, "OFF"
                 if want_like():
                         print "Liking"
+                        print >> f, "Liking"
                         gpio.output(set_button_pin, gpio.HIGH)
                         time.sleep(1.0)
                         print "Stopping liking"
+                        print >> f, "Stopping liking"
                         gpio.output(set_button_pin, gpio.LOW)
                 count=count+1
                 if count >= 10:
@@ -98,21 +104,30 @@ def main_loop():
                         try:
                                 r = get_likes()
                                 print "got likes with ", r.status_code
+                                print >> f, "got likes with ", r.status_code
                                 print "text: ", r.text
+                                print >> f, "text: ", r.text                                
                                 like_times=parse_likes(r.text)
                                 for lt in like_times:
                                         exec_like(lt)
                                 gpio.output(connection_pin, gpio.HIGH)
                         except Exception as e:
                                 print "Failed to get likes ", e
+                                print >> f, "Failed to get likes ", e
                 led_state = not led_state
                 gpio.output(script_running_pin, gpio.HIGH if led_state else gpio.LOW)
                 time.sleep(0.5)
                 gpio.output(connection_pin, gpio.LOW)
 
 if __name__ == "__main__":
-        setup_gpio()
-        try:
-                main_loop()
-        except Exception as e:
-                print "Exception: ",e
+        with open("/tmp/like_log", 'w') as f:
+                setup_gpio()
+                try:
+                        main_loop(f)
+                        f.flush()
+                        os.fsync()
+                except Exception as e:
+                        print >> f, traceback.format_exc()
+                        print >> f, "Exception: ",e
+                        print "Exception: ",e
+                        raise e

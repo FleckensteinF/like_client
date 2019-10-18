@@ -123,7 +123,9 @@ def main_loop(f):
                 f.flush()
 
 if __name__ == "__main__":
-        with open("/tmp/like_log", 'w') as f:
+        current_time = datetime.datetime.now()
+        filename = "/home/pi/like_logs/"+current_time.strftime("%Y-%m-%d_%H-%M-%S")+".log"
+        with open(filename, 'w') as f:
                 setup_gpio()
                 try:
                         main_loop(f)

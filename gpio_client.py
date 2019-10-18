@@ -8,6 +8,7 @@ import select
 import datetime
 import requests
 import traceback
+import json
 
 base_url="https://likeserver-164912.appspot.com/"
 my_button="Christian"
@@ -22,23 +23,24 @@ def really_post_like():
         r=requests.post(base_url+"like",data={'button_id':my_button,'client':'like_button'})
         return r
 
-def get_likes():
-        r=requests.get(base_url+"like",params={'button_id':my_button,'client':'like_button'})
+def get_likes(f):
+        r=requests.get(base_url+"like",params={'button_id':my_button,'client':'like_button','json_encoding':'1'})
+        print "got likes with ", r.status_code
+        print >> f, "got likes with ", r.status_code
+        print "text: ", r.text
+        print >> f, "text: ", r.text                                
+
+        json_encoded_r=json.loads(r.text)
         return r
 
 def parse_likes(like_return):
+        if not like_return:
+                return set()
         like_times=set()
-        first = True
-        for line in like_return.split('\n'):
+        for line in like_return:
                 line=line.strip()
                 if not line:
                         continue
-                if first:
-                        if line != 'likes:':
-                                return set()
-                        else:
-                                first=False
-                                continue
                 like_time=datetime.datetime.strptime(line,"%Y-%m-%d_%H-%M-%S.%f")
                 if like_time not in liked_times:
                         like_times.add(like_time)
@@ -102,15 +104,20 @@ def main_loop(f):
                 if count >= 10:
                         count = 0
                         try:
-                                r = get_likes()
-                                print "got likes with ", r.status_code
-                                print >> f, "got likes with ", r.status_code
-                                print "text: ", r.text
-                                print >> f, "text: ", r.text                                
-                                like_times=parse_likes(r.text)
+                                r = get_likes(f)
+                                like_times=parse_likes(r['likes'])
                                 for lt in like_times:
                                         exec_like(lt)
+                                users_online = r['like_queries']
                                 gpio.output(connection_pin, gpio.HIGH)
+                                time.sleep(0.5)
+                                gpio.output(connection_pin, gpio.LOW)
+                                time.sleep(0.5)
+                                for i in range(users_online):
+                                        gpio.output(connection_pin, gpio.HIGH)
+                                        time.sleep(0.2)
+                                        gpio.output(connection_pin, gpio.LOW)
+                                        time.sleep(0.2)
                         except Exception as e:
                                 print >> f, "inner"
                                 print >> f, traceback.format_exc()

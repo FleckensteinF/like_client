@@ -57,7 +57,3 @@ if __name__ == "__main__":
 
     print r.status_code
     print r.text
-
-
-
-

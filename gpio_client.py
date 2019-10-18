@@ -64,13 +64,13 @@ def exec_like(like_time):
         liked_times.add(like_time)
 
 def want_like():
-	if select.select([sys.stdin,], [], [], 0.0)[0]:
-		ch = os.read(sys.stdin.fileno(), 1)
-		if not ch:
-			return False
-		return ch == '1'
-	else:
-		return False
+        if select.select([sys.stdin,], [], [], 0.0)[0]:
+                ch = os.read(sys.stdin.fileno(), 1)
+                if not ch:
+                        return False
+                return ch == '1'
+        else:
+                return False
 
 def main_loop(f):
         count=0
@@ -112,12 +112,15 @@ def main_loop(f):
                                         exec_like(lt)
                                 gpio.output(connection_pin, gpio.HIGH)
                         except Exception as e:
+                                print >> f, "inner"
+                                print >> f, traceback.format_exc()
                                 print "Failed to get likes ", e
                                 print >> f, "Failed to get likes ", e
                 led_state = not led_state
                 gpio.output(script_running_pin, gpio.HIGH if led_state else gpio.LOW)
                 time.sleep(0.5)
                 gpio.output(connection_pin, gpio.LOW)
+                f.flush()
 
 if __name__ == "__main__":
         with open("/tmp/like_log", 'w') as f:
@@ -127,6 +130,7 @@ if __name__ == "__main__":
                         f.flush()
                         os.fsync()
                 except Exception as e:
+                        print >> f, "outer"
                         print >> f, traceback.format_exc()
                         print >> f, "Exception: ",e
                         print "Exception: ",e

@@ -31,7 +31,7 @@ def get_likes(f):
         print >> f, "text: ", r.text                                
 
         json_encoded_r=json.loads(r.text)
-        return r
+        return json_encoded_r
 
 def parse_likes(like_return):
         if not like_return:
@@ -121,6 +121,7 @@ def main_loop(f):
                         except Exception as e:
                                 print >> f, "inner"
                                 print >> f, traceback.format_exc()
+                                print traceback.format_exc()
                                 print "Failed to get likes ", e
                                 print >> f, "Failed to get likes ", e
                 led_state = not led_state

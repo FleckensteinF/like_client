@@ -28,9 +28,12 @@ def get_likes(f):
         print "got likes with ", r.status_code
         print >> f, "got likes with ", r.status_code
         print "text: ", r.text
-        print >> f, "text: ", r.text                                
-
+        print >> f, "text: ", r.text
+        if not r.ok:
+            return None
         json_encoded_r=json.loads(r.text)
+        print "JSON'd Likes: ", json_encoded_r
+        print >> f, "JSON'd Likes: ", json_encoded_r
         return json_encoded_r
 
 def parse_likes(like_return):
@@ -77,7 +80,7 @@ def want_like():
 def main_loop(f):
         count=0
         led_state=False
-        while True:                
+        while True:
                 if (gpio.input(button_pin)):
                         print "Like"
                         print >> f, "Like"
@@ -105,25 +108,30 @@ def main_loop(f):
                         count = 0
                         try:
                                 r = get_likes(f)
-                                like_times=parse_likes(r['likes'])
-                                for lt in like_times:
-                                        exec_like(lt)
-                                users_online = r['like_queries']
-                                gpio.output(connection_pin, gpio.HIGH)
-                                time.sleep(0.5)
-                                gpio.output(connection_pin, gpio.LOW)
-                                time.sleep(0.5)
-                                for i in range(users_online):
-                                        gpio.output(connection_pin, gpio.HIGH)
-                                        time.sleep(0.2)
-                                        gpio.output(connection_pin, gpio.LOW)
-                                        time.sleep(0.2)
+                                if r is not None:
+                                    like_times=parse_likes(r['likes'])
+                                    for lt in like_times:
+                                            exec_like(lt)
+                                    users_online = r['like_queries']
+                                    gpio.output(connection_pin, gpio.HIGH)
+                                    time.sleep(0.5)
+                                    gpio.output(connection_pin, gpio.LOW)
+                                    time.sleep(0.5)
+                                    for i in range(users_online):
+                                            gpio.output(connection_pin, gpio.HIGH)
+                                            time.sleep(0.2)
+                                            gpio.output(connection_pin, gpio.LOW)
+                                            time.sleep(0.2)
                         except Exception as e:
                                 print >> f, "inner"
                                 print >> f, traceback.format_exc()
                                 print traceback.format_exc()
-                                print "Failed to get likes ", e
-                                print >> f, "Failed to get likes ", e
+                                try:
+                                    print "Failed to get likes ", e
+                                    print >> f, "Failed to get likes ", e
+                                except TypeError as et:
+                                    print "Unprintable Exception"
+                                    print >> f, "Unprintable Exception"
                 led_state = not led_state
                 gpio.output(script_running_pin, gpio.HIGH if led_state else gpio.LOW)
                 time.sleep(0.5)
